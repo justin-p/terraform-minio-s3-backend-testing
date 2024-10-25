@@ -1,0 +1,79 @@
+# Based of https://github.com/minio/minio/blob/master/docs/orchestration/docker-compose/docker-compose.yaml
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2024-10-13T13-34-11Z
+  command: server --console-address ":9001" http://minio{1...4}/data
+  expose:
+    - "9000"
+    - "9001"
+  environment:
+    MINIO_ROOT_USER: minioadmin
+    MINIO_ROOT_PASSWORD: minioadmin
+  healthcheck:
+    test: ["CMD", "mc", "ready", "local"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+  networks:
+    - traefik-net
+  labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.minio.rule=Host(`minio.domain.tld`)"
+    - "traefik.http.routers.minio.entrypoints=web"
+    - "traefik.http.routers.minio.service=minio"
+    - "traefik.http.services.minio.loadbalancer.server.port=9000"
+    - "traefik.http.services.minio.loadbalancer.sticky=true"
+    - "traefik.http.routers.minioadmin.entrypoints=web"
+    - "traefik.http.routers.minioadmin.rule=Host(`minioadmin.domain.tld`)"
+    - "traefik.http.routers.minioadmin.service=minioadmin"
+    - "traefik.http.services.minioadmin.loadbalancer.server.port=9001"
+
+
+services:
+  # MinIO instance
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - minio1-data:/data
+
+  minio2:
+    <<: *minio-common
+    hostname: minio2
+    volumes:
+      - minio2-data:/data
+
+  minio3:
+    <<: *minio-common
+    hostname: minio3
+    volumes:
+      - minio3-data:/data
+
+  minio4:
+    <<: *minio-common
+    hostname: minio4
+    volumes:
+      - minio4-data:/data
+
+
+  # Traefik reverse proxyloadbalancer
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - traefik-net
+
+volumes:
+  minio1-data:
+  minio2-data:
+  minio3-data:
+  minio4-data:
+
+networks:
+  minio-net:
+  traefik-net:
