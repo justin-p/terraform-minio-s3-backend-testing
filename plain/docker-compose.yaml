@@ -40,7 +40,7 @@ services:
     <<: *minio-common
     hostname: minio2
     volumes:
-      - minio2-data:/data
+      - mini  o2-data:/data
 
   minio3:
     <<: *minio-common

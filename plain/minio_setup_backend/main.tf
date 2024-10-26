@@ -6,18 +6,18 @@ terraform {
     }
   }
 ##
-## enable this after setting up the bucket to move this state to minio
+## enable this after setting up the buckets to move this state to minio
 ## then run terraform init -migrate-state
 ##
 #  backend "s3" {
-#    bucket = "terraform-states-minio-terraform-bucket"
+#    bucket = "terraform-states-minio-terraform-buckets"
 #    endpoints = {
 #      s3 = "http://minio.domain.tld/"
 #    }
 #    key = "terraform.tfstate"
 #
-#    access_key = "terraform-states-minio-terraform-bucket"
-#    secret_key = "vMF_DbRfrUiYE7x0OZJL1c6JGQICVVyvz0OsRn7OV-btNxYKa4qtbA=="
+#    access_key = "terraform-states-minio-terraform-buckets"
+#    secret_key = "pUgtURQ6L6_uc55Fx7S1fH4Pxxv7ocNJUXziO35OGw1AHB5ylvPnSQ=="
 #
 #    region                      = "eu-west-1"
 #    skip_credentials_validation = true
@@ -27,7 +27,11 @@ terraform {
 #    use_path_style              = true
 #  }
 }
- 
+
+variable "terraform_states_minio_states_name" {
+  default = "terraform-states-minio-terraform-buckets"
+}
+
 provider "minio" {
   minio_server   = "minio.domain.tld"
   minio_region   = "eu-west-1"
@@ -35,13 +39,13 @@ provider "minio" {
   minio_password = "minioadmin"
 }
 
-resource "minio_s3_bucket" "state_terraform_s3_bucket" {
-  bucket         = "terraform-states-minio-terraform-bucket"
+resource "minio_s3_bucket" "terraform_states_minio_terraform_buckets" {
+  bucket         = var.terraform_states_minio_states_name
   acl            = "private"
   object_locking = true
 }
 
-data "minio_iam_policy_document" "terraform_state_policy_document" {
+data "minio_iam_policy_document" "terraform_states_minio_terraform_buckets" {
   statement {
     actions = [
       "s3:ListAllMyBuckets",
@@ -60,37 +64,32 @@ data "minio_iam_policy_document" "terraform_state_policy_document" {
     ]
 
     resources = [
-      "arn:aws:s3:::terraform-states-minio-terraform-bucket",
-      "arn:aws:s3:::terraform-states-minio-terraform-bucket/*",
+      "arn:aws:s3:::${var.terraform_states_minio_states_name}",
+      "arn:aws:s3:::${var.terraform_states_minio_states_name}/*",
     ]
   }
 }
 
-resource "minio_iam_policy" "terraform_state_policy" {
-  name   = "terraform-states-minio-terraform-bucket"
-  policy = data.minio_iam_policy_document.terraform_state_policy_document.json
+resource "minio_iam_policy" "terraform_state_minio_terraform_buckets" {
+  name   = var.terraform_states_minio_states_name
+  policy = data.minio_iam_policy_document.terraform_states_minio_terraform_buckets.json
 
 }
 
-resource "minio_iam_user" "terraform_user" {
-  name = "terraform-states-minio-terraform-bucket"
-
+resource "minio_iam_user" "terraform_states_minio_terraform_buckets" {
+  name = var.terraform_states_minio_states_name
 }
 
-resource "minio_iam_user_policy_attachment" "terraform_user_policy_attachment" {
-  user_name   = minio_iam_user.terraform_user.id
-  policy_name = minio_iam_policy.terraform_state_policy.id
+resource "minio_iam_user_policy_attachment" "terraform_states_minio_terraform_buckets" {
+  user_name   = minio_iam_user.terraform_states_minio_terraform_buckets.id
+  policy_name = minio_iam_policy.terraform_state_minio_terraform_buckets.id
 }
 
-output "user_minio_user" {
-  value = minio_iam_user.terraform_user.id
+output "terraform_states_minio_terraform_buckets_user_name" {
+  value = minio_iam_user.terraform_states_minio_terraform_buckets.id
 }
 
-output "minio_user_status" {
-  value = minio_iam_user.terraform_user.status
-}
-
-output "minio_user_secret" {
-  value     = nonsensitive(minio_iam_user.terraform_user.secret)
+output "terraform_states_minio_terraform_buckets_user_secret" {
+  value     = nonsensitive(minio_iam_user.terraform_states_minio_terraform_buckets.secret)
   sensitive = false
 }
