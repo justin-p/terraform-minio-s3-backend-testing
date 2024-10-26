@@ -1,0 +1,15 @@
+admin:
+  identity: "2947cad6da9bb1d8fae4db4948b6c7c2ba452f280eb344fccb73df61a58eda8c" # For example: cf6c535e738c1dd47a1d746366fde7f0309d1e0a8471b9f6e909833906afbbfa
+
+tls:
+  key: /certs/server.key
+  cert: certs/server.cert
+
+keystore:
+   vault:
+     endpoint: http://vault:8200
+     version:  v2
+     engine:   minio-kes-kv
+     approle:
+       id:     "auth/approle/role/kes-server"
+       secret: "51c99c3c-375a-6ee7-85cf-82ce7be480a3"

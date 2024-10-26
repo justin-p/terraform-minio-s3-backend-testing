@@ -8,6 +8,9 @@ x-minio-common: &minio-common
   environment:
     MINIO_ROOT_USER: minioadmin
     MINIO_ROOT_PASSWORD: minioadmin
+    #MINIO_KMS_KES_ENDPOINT: "https://minio-kes:7373"
+  volumes:
+      - ./_data/kes/certs:/root/.minio/certs
   healthcheck:
     test: ["CMD", "mc", "ready", "local"]
     interval: 5s
@@ -27,9 +30,52 @@ x-minio-common: &minio-common
     - "traefik.http.routers.minioadmin.service=minioadmin"
     - "traefik.http.services.minioadmin.loadbalancer.server.port=9001"
 
-
 services:
-  # MinIO instance
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - traefik-net
+
+  vault:
+    image: hashicorp/vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_LOCAL_CONFIG: '{"storage": {"file": {"path": "/vault/file"}}, "listener": [{"tcp": { "address": "0.0.0.0:8200", "tls_disable": true}}], "default_lease_ttl": "168h", "max_lease_ttl": "720h", "ui": true}'
+    ports:
+      - "8200:8200"
+    command: "server"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vault.rule=Host(`vault.domain.tld`)"
+      - "traefik.http.routers.vault.entrypoints=web"
+      - "traefik.http.routers.vault.service=vault"
+      - "traefik.http.services.vault.loadbalancer.server.port=8200"
+    networks:
+      - traefik-net
+
+# https://min.io/docs/kes/integrations/hashicorp-vault-keystore/
+# https://github.com/innoverio/minio-kms-trino/blob/main/docker-compose.yml
+  minio-kes:
+    image: minio/kes:latest
+    command: server --config /etc/kes/config.yml
+    ports:
+      - "7373:7373"
+    environment:
+      KES_SERVER: "https://minio-kes:7373"
+    volumes:
+      - ./_data/kes/certs:/certs
+      - ./_config/kes/config.yml:/etc/kes/config.yml
+    networks:
+      - traefik-net
+
   minio1:
     <<: *minio-common
     hostname: minio1
@@ -54,25 +100,12 @@ services:
     volumes:
       - minio4-data:/data
 
-
-  # Traefik reverse proxyloadbalancer
-  traefik:
-    image: traefik:v2.10
-    command:
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - traefik-net
-
 volumes:
   minio1-data:
   minio2-data:
   minio3-data:
   minio4-data:
+  kes-data:
 
 networks:
   traefik-net:

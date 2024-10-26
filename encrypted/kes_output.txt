@@ -1,0 +1,40 @@
+$ ~/_tools/kes-linux-amd64 identity new --key server.key --cert server.cert --ip "127.0.0.1" --dns minio-kes 
+Your API key:
+
+   kes:v1:AFWAsVu4rLUe4x8mXO0df9yFrD/U1Lhfh6+eaS2SVvZD
+
+This is the only time it is shown. Keep it secret and secure!
+
+Your Identity:
+
+   f9ce4c7ca0beb218abf18fb360c3ba44d940275a21a6f27933a3d7614482ffc0
+
+The identity is not a secret. It can be shared. Any peer
+needs this identity in order to verify your API key.
+
+The generated TLS private key is stored at: server.key
+The generated TLS certificate is stored at: server.cert
+
+The identity can be computed again via:
+
+    kes identity of kes:v1:AFWAsVu4rLUe4x8mXO0df9yFrD/U1Lhfh6+eaS2SVvZD
+    kes identity of server.cert
+
+
+$ ~/_tools/kes-linux-amd64 identity new
+Your API key:
+
+   kes:v1:AIXUiWMzxExPsI8rU20l1UrDWfyEe9hozVqUSCrnQERL
+
+This is the only time it is shown. Keep it secret and secure!
+
+Your Identity:
+
+   2947cad6da9bb1d8fae4db4948b6c7c2ba452f280eb344fccb73df61a58eda8c
+
+The identity is not a secret. It can be shared. Any peer
+needs this identity in order to verify your API key.
+
+The identity can be computed again via:
+
+    kes identity of kes:v1:AIXUiWMzxExPsI8rU20l1UrDWfyEe9hozVqUSCrnQERL
